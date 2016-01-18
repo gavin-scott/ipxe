@@ -1,0 +1,91 @@
+import groovy.text.GStringTemplateEngine
+import org.freecompany.redline.payload.*
+import org.freecompany.redline.header.*
+
+defaultTasks 'rpm'
+
+buildscript {
+    ext {
+        env = System.getenv()
+        buildNumber = env.BUILD_NUMBER ? env.BUILD_NUMBER.toString() : ((int) (System.currentTimeMillis() / 1000)).toString()
+        BASE_REPO_URL = hasProperty('BASE_REPO_URL') ? BASE_REPO_URL : 'http://10.35.178.198:8081/artifactory'
+        PLUGINS_REPO = hasProperty('PLUGINS_REPO') ? asmnext - trunk - external : 'plugins-release'
+        PLUGINS_REPO_URL = hasProperty('PLUGINS_REPO_URL') ? PLUGINS_REPO_URL : "${BASE_REPO_URL}/${PLUGINS_REPO}"
+        rpm_packageName = 'ipxe-devel'
+        rpm_description = 'iPXE - Open Source Boot Firmware'
+        rpm_summary = 'iPXE is an open source network bootloader. It provides a direct\n' +
+                'replacement for proprietary PXE ROMs, with many extra features such as\n' +
+                'DNS, HTTP, iSCSI, etc.'
+        rpm_version = '20160117'
+        rpm_release = '1.git8af888.asm820'
+        rpm_vendor = 'Dell, Inc.'
+        rpm_url = 'http://ipxe.org/'
+        rpm_license = 'GPLv2 with additional permissions and BSD'
+        rpm_packager = 'Dell, Inc.'
+    }
+
+    repositories {
+        maven {
+            url PLUGINS_REPO_URL
+        }
+    }
+    dependencies {
+        classpath 'org.redline-rpm:redline:1.1.12'
+    }
+}
+
+task rpm << {
+    File rpmDestinationDirectory = new File("${buildDir}/distributions")
+    if (!rpmDestinationDirectory.isDirectory()) {
+        rpmDestinationDirectory.mkdirs()
+    }
+
+    org.freecompany.redline.Builder rpmBuilder = new org.freecompany.redline.Builder()
+
+    // Dependencies needed to build ipxe ISO
+    rpmBuilder.addDependencyMore('gcc', '4.4.7')
+    rpmBuilder.addDependencyMore('xz-devel', '4.999')
+    rpmBuilder.addDependencyMore('genisoimage', '1.1.9')
+    rpmBuilder.addDependencyMore('syslinux', '4.0.4')
+
+    // Add files copied from https://github.com/dell-asm/asm-deployer
+    fileTree(dir: '.', include: '**').visit {
+        rpmBuilder.addDirectory("/opt/src", 0755, Directive.NONE, 'root', 'root', false)
+        rpmBuilder.addDirectory("/opt/src/ipxe", 0755, Directive.NONE, 'root', 'root', false)
+        if (!it.path.startsWith(".git") && !it.path.startsWith(".gradle") && !it.path.startsWith("build")) {
+            if (it.file.isDirectory()) {
+                if (!it.path.startsWith("src")) {
+                    rpmBuilder.addDirectory("/opt/src/ipxe/${it.path}", 0755, Directive.NONE, 'root', 'root', false)
+                } else {
+                    // src directories need to be owned by razor so it can build the ISO
+                    rpmBuilder.addDirectory("/opt/src/ipxe/${it.path}", 0755, Directive.NONE, 'razor', 'razor', false)
+                }
+            } else if (it.file.isFile()) {
+                if (it.path.endsWith("named.h")) {
+                    // needs to be able to touch config/named.h in order for razor to build ISO
+                    rpmBuilder.addFile("/opt/src/ipxe/${it.path}", it.file, 0644, Directive.NONE, 'razor', 'razor')
+                } else {
+                    rpmBuilder.addFile("/opt/src/ipxe/${it.path}", it.file, 0644, Directive.NONE, 'root', 'root')
+                }
+            }
+        }
+    }
+
+    rpmBuilder.setPackage(project.rpm_packageName, project.rpm_version, project.rpm_release)
+    rpmBuilder.setType(RpmType.BINARY)
+    rpmBuilder.setPlatform(Architecture.NOARCH, 'LINUX')
+    rpmBuilder.setSummary(project.rpm_summary)
+    rpmBuilder.setDescription(project.rpm_description)
+    rpmBuilder.setBuildHost('localhost')
+    rpmBuilder.setLicense(project.rpm_license)
+    rpmBuilder.setGroup('Enterprise Systems Management')
+    rpmBuilder.setDistribution('')
+    rpmBuilder.setVendor(project.rpm_vendor)
+    rpmBuilder.setPackager(project.rpm_packager)
+    rpmBuilder.setUrl(project.rpm_url)
+    println rpmBuilder.build(rpmDestinationDirectory)
+}
+
+task clean(type: Delete) {
+    delete buildDir
+}
