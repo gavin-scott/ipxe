@@ -83,6 +83,20 @@ for f; do
 	cp ${f} ${dir}/${g}
 done >> ${cfg}
 
+#
+# Copy set_static_ip.cmd to ${dir} for inclusion in built ipxe.iso image after
+# sed'ing it to set some network config info.
+#
+if [ ! -z "$IP_ADDRESS" ]; then
+        # This is a static OS install. We need to inject several variable values
+        # into the /opt/src/ipxe/src/util/asm/SET_STATIC_IP.CMD template script
+        # in order to create a script which is customized for the target server
+        # with the network information. Put the new script into the ${dir}
+        # directory which will cause it to be included in the root directory
+        # of the built ipxe-<idrac-ip-addr>.iso image.
+	sed -e "s/_TARGET_MAC_/${MAC_ADDRESS}/" -e "s/_IP_ADDRESS_/${IP_ADDRESS}/" -e "s/_NETMASK_/${NETMASK}/" -e "s/_GATEWAY_/${GATEWAY}/" util/asm/set_static_ip.cmd > ${dir}/set_static_ip.cmd
+fi
+
 case "${LEGACY}" in
 	1)
 		# check for mtools
