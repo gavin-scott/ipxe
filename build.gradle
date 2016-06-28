@@ -16,7 +16,7 @@ buildscript {
         rpm_summary = 'iPXE is an open source network bootloader. It provides a direct\n' +
                 'replacement for proprietary PXE ROMs, with many extra features such as\n' +
                 'DNS, HTTP, iSCSI, etc.'
-        rpm_version = '20160117'
+        rpm_version = env.RPM_VERSION ? env.RPM_VERSION : '8.2.0'
         rpm_release = '1.git8af888.asm820'
         rpm_vendor = 'Dell, Inc.'
         rpm_url = 'http://ipxe.org/'
