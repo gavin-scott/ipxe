@@ -71,7 +71,7 @@ task rpm << {
         }
     }
 
-    rpmBuilder.setPackage(project.rpm_packageName, project.rpm_version, project.rpm_release)
+    rpmBuilder.setPackage(project.rpm_packageName, project.rpm_version, buildNumber)
     rpmBuilder.setType(RpmType.BINARY)
     rpmBuilder.setPlatform(Architecture.NOARCH, 'LINUX')
     rpmBuilder.setSummary(project.rpm_summary)
