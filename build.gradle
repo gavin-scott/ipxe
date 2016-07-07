@@ -11,15 +11,15 @@ buildscript {
         BASE_REPO_URL = hasProperty('BASE_REPO_URL') ? BASE_REPO_URL          : 'http://10.35.178.198:8081/artifactory'
         PLUGINS_REPO = hasProperty('PLUGINS_REPO') ? PLUGINS_REPO             : 'plugins-release'
         PLUGINS_REPO_URL = hasProperty('PLUGINS_REPO_URL') ? PLUGINS_REPO_URL : "${BASE_REPO_URL}/${PLUGINS_REPO}"
-        rpm_packageName = env.RPM_PACKAGENAME ? env.RPM_PACKAGENAME : 'Dell-ASM-ipxe-devel'
+        rpm_packageName = 'ipxe-devel'
         rpm_description = env.RPM_DESCRIPTION ? env.RPM_DESCRIPTION : 'iPXE - Open Source Boot Firmware'
         rpm_summary = 'iPXE is an open source network bootloader. It provides a direct\n' +
                 'replacement for proprietary PXE ROMs, with many extra features such as\n' +
                 'DNS, HTTP, iSCSI, etc.'
 
-        rpm_version     = env.RPM_VERSION     ? env.RPM_VERSION     : '8.2.0'
-        // rpm_release = build number plus upstream commit hash at time our dell-asm repo was forked from ipxe repo
-        rpm_release = "${buildNumber}.git8af888"
+        rpm_version     = '20160117'
+        asm_version     = env.RPM_VERSION     ? env.RPM_VERSION.replaceAll('\\.', '')     : '820'
+        rpm_release     = "${buildNumber}.git8af888.asm${asm_version}"
         rpm_vendor      = env.RPM_VENDOR      ? env.RPM_VENDOR      : 'Dell, Inc.'
         rpm_url         = env.RPM_URL         ? env.RPM_URL         : 'http://ipxe.org/'
         rpm_license     = env.RPM_LICENSE     ? env.RPM_LICENSE     : 'GPLv2 with additional permissions and BSD'
