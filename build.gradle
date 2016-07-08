@@ -19,7 +19,7 @@ buildscript {
 
         rpm_version     = '20160117'
         asm_version     = env.RPM_VERSION     ? env.RPM_VERSION.replaceAll('\\.', '')     : '820'
-        rpm_release     = "${buildNumber}.git8af888.asm${asm_version}"
+        rpm_release     = "${asm_version}-${buildNumber}.asm.git8af888"
         rpm_vendor      = env.RPM_VENDOR      ? env.RPM_VENDOR      : 'Dell, Inc.'
         rpm_url         = env.RPM_URL         ? env.RPM_URL         : 'http://ipxe.org/'
         rpm_license     = env.RPM_LICENSE     ? env.RPM_LICENSE     : 'GPLv2 with additional permissions and BSD'
