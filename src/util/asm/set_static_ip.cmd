@@ -56,3 +56,36 @@ if defined GATEWAY (
 ) else (
   netsh interface ipv4 set address "%CONNECTION_NAME%" static %IP_ADDRESS% %NETMASK%
 )
+
+REM The netsh command returns before the interfaces are fully operational
+REM with the new settings. Ping our adapter IP once every 10 seconds for
+REM up to 5 minutes to wait until it is up.
+
+REM Use ASM appliance IP if available, otherwise use adapter IP
+set PING_ADDRESS=%1
+if [%PING_ADDRESS%] == [] (
+  set PING_ADDRESS=%IP_ADDRESS%
+)
+
+set SLEEP_INTERVAL_SECS=10
+set SLEEP_RETRIES=30
+set CURRENT_SLEEP_COUNT=1
+
+:ping_loop
+ping %PING_ADDRESS% -n 1 > nul
+
+if %ERRORLEVEL% EQU 0 (
+  goto :adapter_ready
+)
+
+set /a "CURRENT_SLEEP_COUNT = CURRENT_SLEEP_COUNT + 1"
+
+if %CURRENT_SLEEP_COUNT% GTR %SLEEP_RETRIES% (
+  echo "Unable to ping IP address %PING_ADDRESS%"
+  exit /b 1
+)
+
+sleep %SLEEP_INTERVAL_SECS%
+goto :ping_loop
+
+:adapter_ready
