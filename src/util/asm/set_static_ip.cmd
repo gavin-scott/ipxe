@@ -85,7 +85,11 @@ if %CURRENT_SLEEP_COUNT% GTR %SLEEP_RETRIES% (
   exit /b 1
 )
 
-sleep %SLEEP_INTERVAL_SECS%
+REM
+REM Use 'ping -n <seconds_to_sleep> 127.0.0.1' to simulate a sleep
+REM since the SLEEP command is not available in WinPE environment
+REM
+ping -n %SLEEP_INTERVAL_SECS% 127.0.0.1 > nul
 goto :ping_loop
 
 :adapter_ready
