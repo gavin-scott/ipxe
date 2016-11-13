@@ -511,6 +511,7 @@ static int smsc75xx_dump_statistics ( struct smsc75xx_device *smsc75xx ) {
  */
 static int smsc75xx_reset ( struct smsc75xx_device *smsc75xx ) {
 	uint32_t hw_cfg;
+	unsigned int i;
 	int rc;
 
 	/* Reset device */
@@ -519,18 +520,22 @@ static int smsc75xx_reset ( struct smsc75xx_device *smsc75xx ) {
 		return rc;
 
 	/* Wait for reset to complete */
-	udelay ( SMSC75XX_RESET_DELAY_US );
+	for ( i = 0 ; i < SMSC75XX_RESET_MAX_WAIT_MS ; i++ ) {
 
-	/* Check that reset has completed */
-	if ( ( rc = smsc75xx_readl ( smsc75xx, SMSC75XX_HW_CFG,
-				     &hw_cfg ) ) != 0 )
-		return rc;
-	if ( hw_cfg & SMSC75XX_HW_CFG_LRST ) {
-		DBGC ( smsc75xx, "SMSC75XX %p failed to reset\n", smsc75xx );
-		return -ETIMEDOUT;
+		/* Check if reset has completed */
+		if ( ( rc = smsc75xx_readl ( smsc75xx, SMSC75XX_HW_CFG,
+					     &hw_cfg ) ) != 0 )
+			return rc;
+		if ( ! ( hw_cfg & SMSC75XX_HW_CFG_LRST ) )
+			return 0;
+
+		/* Delay */
+		mdelay ( 1 );
 	}
 
-	return 0;
+	DBGC ( smsc75xx, "SMSC75XX %p timed out waiting for reset\n",
+	       smsc75xx );
+	return -ETIMEDOUT;
 }
 
 /******************************************************************************
@@ -979,8 +984,9 @@ static int smsc75xx_probe ( struct usb_function *func,
 	smsc75xx->netdev = netdev;
 	usbnet_init ( &smsc75xx->usbnet, func, &smsc75xx_intr_operations,
 		      &smsc75xx_in_operations, &smsc75xx_out_operations );
-	usb_refill_init ( &smsc75xx->usbnet.intr, 0, SMSC75XX_INTR_MAX_FILL );
-	usb_refill_init ( &smsc75xx->usbnet.in, SMSC75XX_IN_MTU,
+	usb_refill_init ( &smsc75xx->usbnet.intr, 0, 0,
+			  SMSC75XX_INTR_MAX_FILL );
+	usb_refill_init ( &smsc75xx->usbnet.in, 0, SMSC75XX_IN_MTU,
 			  SMSC75XX_IN_MAX_FILL );
 	mii_init ( &smsc75xx->mii, &smsc75xx_mii_operations );
 	DBGC ( smsc75xx, "SMSC75XX %p on %s\n", smsc75xx, func->name );
