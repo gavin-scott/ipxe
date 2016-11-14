@@ -17,8 +17,8 @@ buildscript {
                 'replacement for proprietary PXE ROMs, with many extra features such as\n' +
                 'DNS, HTTP, iSCSI, etc.'
 
-        rpm_version     = '20160117'
-        asm_version     = env.RPM_VERSION     ? env.RPM_VERSION.replaceAll('\\.', '')     : '820'
+        rpm_version     = '20161114'
+        asm_version     = env.RPM_VERSION     ? env.RPM_VERSION.replaceAll('\\.', '')     : '831'
         rpm_release     = "${asm_version}-${buildNumber}.asm.git8af888"
         rpm_vendor      = env.RPM_VENDOR      ? env.RPM_VENDOR      : 'Dell, Inc.'
         rpm_url         = env.RPM_URL         ? env.RPM_URL         : 'http://ipxe.org/'
@@ -63,7 +63,7 @@ task rpm << {
                     rpmBuilder.addDirectory("/opt/src/ipxe/${it.path}", 0755, Directive.NONE, 'razor', 'razor', false)
                 }
             } else if (it.file.isFile()) {
-                if (it.path.endsWith("named.h")) {
+                if (it.path.endsWith("named.h") || it.path.endsWith("assert.h") || it.path.endsWith("ipxe/profile.h")) {
                     // needs to be able to touch config/named.h in order for razor to build ISO
                     rpmBuilder.addFile("/opt/src/ipxe/${it.path}", it.file, 0644, Directive.NONE, 'razor', 'razor')
                 } else {
