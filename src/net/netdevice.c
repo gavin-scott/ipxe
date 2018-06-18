@@ -402,11 +402,24 @@ void netdev_tx_complete_err ( struct net_device *netdev,
 	list_del ( &iobuf->list );
 	netdev_tx_err ( netdev, iobuf, rc );
 
-	/* Transmit first pending packet, if any */
-	if ( ( iobuf = list_first_entry ( &netdev->tx_deferred,
-					  struct io_buffer, list ) ) != NULL ) {
+	/* Handle pending transmit queue */
+	while ( ( iobuf = list_first_entry ( &netdev->tx_deferred,
+					     struct io_buffer, list ) ) ) {
+
+		/* Remove from pending transmit queue */
 		list_del ( &iobuf->list );
+
+		/* When any transmit completion fails, cancel all
+		 * pending transmissions.
+		 */
+		if ( rc != 0 ) {
+			netdev_tx_err ( netdev, iobuf, -ECANCELED );
+			continue;
+		}
+
+		/* Otherwise, attempt to transmit the first pending packet */
 		netdev_tx ( netdev, iobuf );
+		break;
 	}
 }
 
@@ -663,6 +676,12 @@ int register_netdev ( struct net_device *netdev ) {
 		ll_protocol->init_addr ( netdev->hw_addr, netdev->ll_addr );
 	}
 
+	/* Set MTU, if not already set */
+	if ( ! netdev->mtu ) {
+		netdev->mtu = ( netdev->max_pkt_len -
+				ll_protocol->ll_header_len );
+	}
+
 	/* Reject network devices that are already available via a
 	 * different hardware device.
 	 */
@@ -855,12 +874,9 @@ void unregister_netdev ( struct net_device *netdev ) {
  */
 void netdev_irq ( struct net_device *netdev, int enable ) {
 
-	/* Do nothing if device does not support interrupts */
-	if ( ! netdev_irq_supported ( netdev ) )
-		return;
-
-	/* Enable or disable device interrupts */
-	netdev->op->irq ( netdev, enable );
+	/* Enable or disable device interrupts, if applicable */
+	if ( netdev_irq_supported ( netdev ) )
+		netdev->op->irq ( netdev, enable );
 
 	/* Record interrupt enabled state */
 	netdev->state &= ~NETDEV_IRQ_ENABLED;
